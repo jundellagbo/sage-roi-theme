@@ -4,6 +4,32 @@ Theme Name: Sage ROI Theme
 Theme URI: https://elementor.com/hello-theme/?utm_source=wp-themes&utm_campaign=theme-uri&utm_medium=wp-dash
 Author: JJ Xooker
 Author URI: https://elementor.com/?utm_source=wp-themes&utm_campaign=author-uri&utm_medium=wp-dash
-Version: 1.0.0
+Version: 1.0.1
 
 */
+
+.qib-button-wrapper .quantity {
+  min-width: unset!important;
+}
+.qib-button-wrapper {
+  float: none!important;
+}
+.woocommerce-ordering {
+  display: none;
+}
+html #content .home-shop-store.home-shop-store.home-shop-store.home-shop-store .woocommerce li.product form button {
+  display: block!important;
+}
+
+.product .summary .qib-button-wrapper {
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+  gap: .5rem;
+}
+
+.products .product .button {
+  margin: 0 auto;
+  display: block!important;
+  float: none!important;
+  width: 100%!important;
+}
