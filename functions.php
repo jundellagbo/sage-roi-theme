@@ -114,6 +114,14 @@ function sage_roi_theme_qty_input_field_on_checkout( $quantity_html, $cart_item,
 
 add_filter( 'woocommerce_loop_add_to_cart_link', 'sage_roi_theme_quantity_inputs_for_woocommerce_loop_add_to_cart_link', 10, 2 );
 function sage_roi_theme_quantity_inputs_for_woocommerce_loop_add_to_cart_link( $html, $product ) {
+    // Handle out of stock products
+    if ( $product && ! $product->is_in_stock() ) {
+        $product_id = $product->get_id();
+        $html = '<a href="' . esc_url( $product->get_permalink() ) . '" class="button alt disabled" aria-disabled="true">' . esc_html__( 'Out of Stock', 'woocommerce' ) . '</a>';
+        return $html;
+    }
+    
+    // Handle in-stock simple products with quantity input
     if ( $product && $product->is_type( 'simple' ) && $product->is_purchasable() && $product->is_in_stock() && ! $product->is_sold_individually() ) {
 		$product_id = $product->get_id();
         $html = '<form action="' . esc_url( $product->add_to_cart_url() ) . '" class="cart" method="post" enctype="multipart/form-data">';
