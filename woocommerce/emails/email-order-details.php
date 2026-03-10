@@ -10,17 +10,94 @@
  * happen. When this occurs the version of the template file will be bumped and
  * the readme will list any important changes.
  *
- * @see https://docs.woocommerce.com/document/template-structure/
+ * @see https://woocommerce.com/document/template-structure/
  * @package WooCommerce\Templates\Emails
- * @version 9.8.0
+ * @version 9.9.0
  */
+
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 defined( 'ABSPATH' ) || exit;
 
 $text_align = is_rtl() ? 'right' : 'left';
+$email_improvements_enabled = FeaturesUtil::feature_is_enabled( 'email_improvements' );
+
+if ( $email_improvements_enabled ) {
+	add_filter( 'woocommerce_order_shipping_to_display_shipped_via', '__return_false' );
+}
 
 do_action( 'woocommerce_email_before_order_table', $order, $sent_to_admin, $plain_text, $email ); ?>
 
+<?php if ( $email_improvements_enabled ) : ?>
+<h2 class="email-order-detail-heading">
+	<?php echo wp_kses_post( __( 'Order summary', 'woocommerce' ) ); ?>
+	<br><span>
+	<?php
+	$before = '';
+	$after  = '';
+	if ( $sent_to_admin ) {
+		$before = '<a class="link" href="' . esc_url( $order->get_edit_order_url() ) . '">';
+		$after  = '</a>';
+	}
+	/* translators: %s: Order ID. */
+	echo wp_kses_post( $before . sprintf( __( 'Order #%s', 'woocommerce' ) . $after . ' (<time datetime="%s">%s</time>)', $order->get_order_number(), $order->get_date_created()->format( 'c' ), wc_format_datetime( $order->get_date_created() ) ) );
+	?>
+	</span>
+</h2>
+
+<div style="margin-bottom: 24px;">
+	<table class="td font-family email-order-details" cellspacing="0" cellpadding="6" style="width: 100%;" border="1">
+		<tbody>
+			<?php
+			echo wc_get_email_order_items( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				$order,
+				array(
+					'show_sku'      => $sent_to_admin,
+					'show_image'    => true,
+					'image_size'    => array( 48, 48 ),
+					'plain_text'    => $plain_text,
+					'sent_to_admin' => $sent_to_admin,
+				)
+			);
+			?>
+		</tbody>
+		<tfoot>
+			<?php
+			$item_totals       = $order->get_order_item_totals();
+			$item_totals_count = count( $item_totals );
+			if ( $item_totals ) {
+				$i = 0;
+				foreach ( $item_totals as $total ) {
+					$i++;
+					$last_class = ( $i === $item_totals_count ) ? ' order-totals-last' : '';
+					?>
+					<tr class="order-totals order-totals-<?php echo esc_attr( $total['type'] ?? 'unknown' ); ?><?php echo esc_attr( $last_class ); ?>">
+						<th class="td text-align-left" scope="row" colspan="2" style="<?php echo ( 1 === $i ) ? 'border-top-width: 4px;' : ''; ?>">
+							<?php
+							echo wp_kses_post( $total['label'] ) . ' ';
+							echo isset( $total['meta'] ) ? wp_kses_post( $total['meta'] ) : '';
+							?>
+						</th>
+						<td class="td text-align-right" style="<?php echo ( 1 === $i ) ? 'border-top-width: 4px;' : ''; ?>"><?php echo wp_kses_post( $total['value'] ); ?></td>
+					</tr>
+					<?php
+				}
+			}
+			if ( $order->get_customer_note() ) {
+				?>
+				<tr class="order-customer-note">
+					<td class="td text-align-left" colspan="3">
+						<b><?php esc_html_e( 'Customer note', 'woocommerce' ); ?></b><br>
+						<?php echo wp_kses( nl2br( wptexturize( $order->get_customer_note() ) ), array( 'br' => array() ) ); ?>
+					</td>
+				</tr>
+				<?php
+			}
+			?>
+		</tfoot>
+	</table>
+</div>
+<?php else : ?>
 <h2>
 	<?php
 	if ( $sent_to_admin ) {
@@ -87,5 +164,11 @@ do_action( 'woocommerce_email_before_order_table', $order, $sent_to_admin, $plai
 		</tfoot>
 	</table>
 </div>
+<?php endif; ?>
 
-<?php do_action( 'woocommerce_email_after_order_table', $order, $sent_to_admin, $plain_text, $email ); ?>
+<?php
+if ( $email_improvements_enabled ) {
+	remove_filter( 'woocommerce_order_shipping_to_display_shipped_via', '__return_false' );
+}
+
+do_action( 'woocommerce_email_after_order_table', $order, $sent_to_admin, $plain_text, $email );
