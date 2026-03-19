@@ -1,5 +1,123 @@
 <?php
 
+/**
+ * Mirrors plugin visibility logic from sage_roi_custom_pre_get_posts_query.
+ */
+function sage_roi_theme_visibility_meta_query_for_current_user() {
+    $user_id = get_current_user_id();
+    if ( ! $user_id || ! function_exists( 'sage_roi_option_key' ) ) {
+        return array();
+    }
+
+    return array(
+        'relation' => 'AND',
+        array(
+            'relation' => 'OR',
+            array(
+                'key'     => sage_roi_option_key( 'hide_from_customers' ),
+                'compare' => 'NOT EXISTS',
+            ),
+            array(
+                'key'     => sage_roi_option_key( 'hide_from_customers' ),
+                'value'   => ';i:' . (int) $user_id . '[;}]',
+                'compare' => 'NOT REGEXP',
+            ),
+        ),
+        array(
+            'relation' => 'OR',
+            array(
+                'key'     => sage_roi_option_key( 'hide_from_users' ),
+                'compare' => 'NOT EXISTS',
+            ),
+            array(
+                'key'     => sage_roi_option_key( 'hide_from_users' ),
+                'value'   => ';i:' . (int) $user_id . '[;}]',
+                'compare' => 'NOT REGEXP',
+            ),
+        ),
+        array(
+            'relation' => 'OR',
+            array(
+                'key'     => sage_roi_option_key( 'show_only_to_users' ),
+                'compare' => 'NOT EXISTS',
+            ),
+            array(
+                'key'     => sage_roi_option_key( 'show_only_to_users' ),
+                'value'   => '',
+                'compare' => '=',
+            ),
+            array(
+                'key'     => sage_roi_option_key( 'show_only_to_users' ),
+                'value'   => 'a:0:{}',
+                'compare' => '=',
+            ),
+            array(
+                'key'     => sage_roi_option_key( 'show_only_to_users' ),
+                'value'   => ';i:' . (int) $user_id . '[;}]',
+                'compare' => 'REGEXP',
+            ),
+        ),
+    );
+}
+
+function sage_roi_theme_get_visible_product_count_by_category( $category_id, $fallback_count = 0 ) {
+    if ( ! class_exists( 'WC_Product_Query' ) ) {
+        return (int) $fallback_count;
+    }
+
+    $args = array(
+        'status'   => 'publish',
+        'limit'    => -1,
+        'return'   => 'ids',
+        'paginate' => false,
+        'tax_query' => array(
+            array(
+                'taxonomy'         => 'product_cat',
+                'field'            => 'term_id',
+                'terms'            => array( (int) $category_id ),
+                'operator'         => 'IN',
+                'include_children' => true,
+            ),
+        ),
+    );
+
+    $meta_query = sage_roi_theme_visibility_meta_query_for_current_user();
+    if ( ! empty( $meta_query ) ) {
+        $args['meta_query'] = $meta_query;
+    }
+
+    $query = new WC_Product_Query( $args );
+    $ids   = $query->get_products();
+    if ( ! is_array( $ids ) ) {
+        return (int) $fallback_count;
+    }
+
+    $visible_count = 0;
+    foreach ( $ids as $product_id ) {
+        $product = wc_get_product( $product_id );
+        if ( $product && $product->is_visible() ) {
+            $visible_count++;
+        }
+    }
+
+    return $visible_count;
+}
+
+function sage_roi_theme_category_link_html( $cat, $product_image = '' ) {
+    $term_link     = get_term_link( $cat->slug, 'product_cat' );
+    $visible_count = sage_roi_theme_get_visible_product_count_by_category( $cat->term_id, $cat->category_count );
+
+    if ( is_wp_error( $term_link ) ) {
+        return '';
+    }
+
+    if ( ! empty( $product_image ) ) {
+        return '<br /><p value="' . esc_url( $term_link ) . '"><a href="' . esc_url( $term_link ) . '#product-lists"><img src="' . esc_url( $product_image ) . '" alt="" width="130" height="70" /><span class="cat-product-count">' . (int) $visible_count . '</span></a></p>';
+    }
+
+    return '<br /><p value="' . esc_url( $term_link ) . '"><a href="' . esc_url( $term_link ) . '#product-lists">' . esc_html( $cat->name ) . '<span class="cat-product-count">' . (int) $visible_count . '</span></a></p>';
+}
+
 // Add text before price
 // function bd_rrp_price_html( $price, $product ) {
 //     if(is_shop()){
@@ -51,18 +169,11 @@ function display_sales_events_horizontal(){
     foreach ($all_categories as $cat) {
         if($cat->category_parent == 0) {
             $category_id = $cat->term_id;
-            // var_dump($cat->category_count);    
-            // get the thumbnail id using the queried category term_id
             $product_thumbnail_id = get_term_meta( $category_id, 'thumbnail_id', true ); 
 
-            // get the image URL
             $product_image = wp_get_attachment_url( $product_thumbnail_id ); 
             if($cat->name != 'Uncategorized'){
-                if($product_image != ''){
-                    $pages_elements .= '<br /><p value="'. get_term_link($cat->slug, 'product_cat') .'"><a href="'. get_term_link($cat->slug, 'product_cat') .'#product-lists">'."<img src='{$product_image}' alt='' width='130' height='70' />" .'<span class="cat-product-count">'.$cat->category_count.'</span></a></p>';    
-                }else{
-                    $pages_elements .= '<br /><p value="'. get_term_link($cat->slug, 'product_cat') .'"><a href="'. get_term_link($cat->slug, 'product_cat') .'#product-lists">'. $cat->name .$product_image .'<span class="cat-product-count">'.$cat->category_count.'</span></a></p>';
-                }            
+                $pages_elements .= sage_roi_theme_category_link_html( $cat, $product_image );
             }
             
             
@@ -118,7 +229,7 @@ function display_sales_events(){
         if($cat->category_parent == 0) {
             $category_id = $cat->term_id;    
             if($cat->name != 'Uncategorized'){   
-                $pages_elements .= '<br /><p value="'. get_term_link($cat->slug, 'product_cat') .'"><a href="'. get_term_link($cat->slug, 'product_cat') .'#product-lists">'. $cat->name .'<span class="cat-product-count">'.$cat->category_count.'</span></a></p>';
+                $pages_elements .= sage_roi_theme_category_link_html( $cat );
             }
             
             
