@@ -112,10 +112,10 @@ function sage_roi_theme_category_link_html( $cat, $product_image = '' ) {
     }
 
     if ( ! empty( $product_image ) ) {
-        return '<br /><p value="' . esc_url( $term_link ) . '"><a href="' . esc_url( $term_link ) . '#product-lists"><img src="' . esc_url( $product_image ) . '" alt="" width="130" height="70" /><span class="cat-product-count">' . (int) $visible_count . '</span></a></p>';
+        return '<div class="category-filter-item"><a href="' . esc_url( $term_link ) . '#product-lists" aria-label="' . esc_attr( $cat->name ) . '"><img src="' . esc_url( $product_image ) . '" alt="' . esc_attr( $cat->name ) . '" width="130" height="70" /><span class="cat-product-count">' . (int) $visible_count . '</span></a></div>';
     }
 
-    return '<br /><p value="' . esc_url( $term_link ) . '"><a href="' . esc_url( $term_link ) . '#product-lists">' . esc_html( $cat->name ) . '<span class="cat-product-count">' . (int) $visible_count . '</span></a></p>';
+    return '<div class="category-filter-item"><a href="' . esc_url( $term_link ) . '#product-lists"><span class="category-filter-name">' . esc_html( $cat->name ) . '</span><span class="cat-product-count">' . (int) $visible_count . '</span></a></div>';
 }
 
 // Add text before price
@@ -146,7 +146,7 @@ add_shortcode('cst-display-invoice-number', 'cst_display_invoice_number');
 
 
 function display_sales_events_horizontal(){
-    $pages_elements = '<style>span.cat-product-count {background: #fff;padding: 7px 10px 10px 10px;border-radius: 100%;}div#category-filter span.cat-product-count {margin-left: 10px;}div#category-filter.category-filter-horizontal span.cat-product-count {margin-left: 0;position: relative;bottom: 10px;}div#category-filter a.current-shop-page-active {background: #dcdcdc;}div#category-filter.category-filter-horizontal span.cat-product-count {position: absolute;top: 3px;right: 3px;display: block;bottom: unset;}div#category-filter a {position: relative;}div#category-filter a{padding: 10px 15px !important}@media (max-width: 651px){.home-shop-store .woocommerce.columns-4 ul.products li.product:not(.has-variation-options) a.woocommerce-LoopProduct-link {min-width: 100%;} .woocommerce ul.products li.product a.woocommerce-LoopProduct-link img {float: left;max-width: 80px;width: 80px;}.woocommerce ul.products li.product a.woocommerce-LoopProduct-link h4.product_category_title, .woocommerce ul.products li.product a.woocommerce-LoopProduct-link h2.woocommerce-loop-product__title,.woocommerce ul.products li.product a.woocommerce-LoopProduct-link span.price {text-align: left;padding-left: 90px;}}</style><div class="category-filter-section"><div class="category-filter-horizontal" name="category-filter" id="category-filter" onchange="categoryFilter(this)">';
+    $pages_elements = '<div class="category-filter-section"><div class="category-filter-horizontal" name="category-filter" id="category-filter" onchange="categoryFilter(this)">';
 
     $taxonomy     = 'product_cat';
     $orderby      = 'name';  
@@ -175,37 +175,17 @@ function display_sales_events_horizontal(){
             if($cat->name != 'Uncategorized'){
                 $pages_elements .= sage_roi_theme_category_link_html( $cat, $product_image );
             }
-            
-            
-            
-            $args2 = array(
-                    'taxonomy'     => $taxonomy,
-                    'child_of'     => 0,
-                    'parent'       => $category_id,
-                    'orderby'      => $orderby,
-                    'show_count'   => $show_count,
-                    'pad_counts'   => $pad_counts,
-                    'hierarchical' => $hierarchical,
-                    'title_li'     => $title,
-                    'hide_empty'   => $empty
-            );
-            $sub_cats = get_categories( $args2 );
-            if($sub_cats) {
-                foreach($sub_cats as $sub_category) {
-                    $pages_elements .= $sub_category->name ;
-                }   
-            }
         }
     }
 	
-	return $pages_elements.'</div><script>function categoryFilter(x){window.location.href = x.value;} var doc_current_page = document.querySelectorAll("div#category-filter");for(i = 0; i < doc_current_page.length; i++){var all_a_under = doc_current_page[i].querySelectorAll("a");for(x = 0; x < all_a_under.length; x++){var all_x_path = all_a_under[x].href.toString().includes(window.location.pathname);if(all_x_path){if(window.location.pathname != "/"){all_a_under[x].classList.add("current-shop-page-active");}}}}</script></div>';
+	return $pages_elements.'</div><script>function categoryFilter(x){window.location.href = x.value;} (function(){if(document.body.classList.contains("home")||document.body.classList.contains("front-page")){return;}var normalizePath=function(path){return path.replace(/\/+$/,"")||"/";};var currentPath=normalizePath(window.location.pathname);if(currentPath==="/"){return;}var doc_current_page=document.querySelectorAll("div#category-filter");for(var i=0;i<doc_current_page.length;i++){var all_a_under=doc_current_page[i].querySelectorAll("a");for(var x=0;x<all_a_under.length;x++){all_a_under[x].classList.remove("current-shop-page-active");var linkPath=normalizePath(new URL(all_a_under[x].href,window.location.origin).pathname);if(linkPath===currentPath){all_a_under[x].classList.add("current-shop-page-active");}}}})();</script></div>';
 }
 
 add_shortcode('filter-product-horizontal', 'display_sales_events_horizontal'); 
 
 
 function display_sales_events(){
-    $pages_elements = '<style>div#category-filter a.current-shop-page-active {background: #dcdcdc;}</style><div class="category-filter-section"><div name="category-filter" id="category-filter" onchange="categoryFilter(this)"><h4>Select Category</h4>';
+    $pages_elements = '<div class="category-filter-section"><div name="category-filter" id="category-filter" onchange="categoryFilter(this)"><h4>Select Category</h4>';
 
     $taxonomy     = 'product_cat';
     $orderby      = 'name';  
@@ -231,30 +211,10 @@ function display_sales_events(){
             if($cat->name != 'Uncategorized'){   
                 $pages_elements .= sage_roi_theme_category_link_html( $cat );
             }
-            
-            
-            
-            $args2 = array(
-                    'taxonomy'     => $taxonomy,
-                    'child_of'     => 0,
-                    'parent'       => $category_id,
-                    'orderby'      => $orderby,
-                    'show_count'   => $show_count,
-                    'pad_counts'   => $pad_counts,
-                    'hierarchical' => $hierarchical,
-                    'title_li'     => $title,
-                    'hide_empty'   => $empty
-            );
-            $sub_cats = get_categories( $args2 );
-            if($sub_cats) {
-                foreach($sub_cats as $sub_category) {
-                    $pages_elements .= $sub_category->name ;
-                }   
-            }
         }
     }
 	
-	return $pages_elements.'</div><script>function categoryFilter(x){window.location.href = x.value;} var doc_current_page = document.querySelectorAll("div#category-filter");for(i = 0; i < doc_current_page.length; i++){var all_a_under = doc_current_page[i].querySelectorAll("a");for(x = 0; x < all_a_under.length; x++){var all_x_path = all_a_under[x].href.toString().includes(window.location.pathname);if(all_x_path){if(window.location.pathname != "/"){all_a_under[x].classList.add("current-shop-page-active");}}}}</script></div>';
+	return $pages_elements.'</div><script>function categoryFilter(x){window.location.href = x.value;} (function(){if(document.body.classList.contains("home")||document.body.classList.contains("front-page")){return;}var normalizePath=function(path){return path.replace(/\/+$/,"")||"/";};var currentPath=normalizePath(window.location.pathname);if(currentPath==="/"){return;}var doc_current_page=document.querySelectorAll("div#category-filter");for(var i=0;i<doc_current_page.length;i++){var all_a_under=doc_current_page[i].querySelectorAll("a");for(var x=0;x<all_a_under.length;x++){all_a_under[x].classList.remove("current-shop-page-active");var linkPath=normalizePath(new URL(all_a_under[x].href,window.location.origin).pathname);if(linkPath===currentPath){all_a_under[x].classList.add("current-shop-page-active");}}}})();</script></div>';
 }
 
 add_shortcode('filter-product', 'display_sales_events'); 
