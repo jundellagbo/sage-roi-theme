@@ -628,3 +628,18 @@ html #content .woocommerce ul.products li.product {
     width: 100%!important;
   }
 }
+
+section.related.products {
+  clear: both;
+  display: block; /* Ensures it stays a block-level element */
+}
+
+section.related.products ul.products.columns-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media screen and (max-width: 1025px) {
+  section.related.products ul.products.columns-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
