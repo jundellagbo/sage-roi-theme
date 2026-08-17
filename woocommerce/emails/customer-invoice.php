@@ -12,16 +12,17 @@
  *
  * @see https://woocommerce.com/document/template-structure/
  * @package WooCommerce\Templates\Emails
- * @version 9.9.0
+ * @version 10.4.0
  */
+
+use Automattic\WooCommerce\Enums\OrderStatus;
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$email_improvements_enabled = class_exists( 'Automattic\WooCommerce\Utilities\FeaturesUtil' )
-	? \Automattic\WooCommerce\Utilities\FeaturesUtil::feature_is_enabled( 'email_improvements' )
-	: false;
+$email_improvements_enabled = FeaturesUtil::feature_is_enabled( 'email_improvements' );
 
 /**
  * Executes the e-mail header.
@@ -44,7 +45,7 @@ if ( ! empty( $order->get_billing_first_name() ) ) {
 <?php if ( $order->needs_payment() ) { ?>
 	<p>
 	<?php
-	if ( $order->has_status( 'failed' ) ) {
+	if ( $order->has_status( OrderStatus::FAILED ) ) {
 		printf(
 			wp_kses(
 			/* translators: %1$s Site title, %2$s Order pay link */
@@ -62,7 +63,7 @@ if ( ! empty( $order->get_billing_first_name() ) ) {
 		printf(
 			wp_kses(
 			/* translators: %1$s Site title, %2$s Order pay link */
-				__( "An order has been created for you on %1\$s. Your order details are below, with a link to make payment when you're ready: %2\$s", 'woocommerce' ),
+				__( 'An order has been created for you on %1$s. Your order details are below, with a link to make payment when you’re ready: %2$s', 'woocommerce' ),
 				array(
 					'a' => array(
 						'href' => array(),
@@ -119,7 +120,7 @@ do_action( 'woocommerce_email_customer_details', $order, $sent_to_admin, $plain_
  * Show user-defined additional content - this is set in each email's settings.
  */
 if ( $additional_content ) {
-	echo $email_improvements_enabled ? '<table border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td class="email-additional-content">' : '';
+	echo $email_improvements_enabled ? '<table border="0" cellpadding="0" cellspacing="0" width="100%" role="presentation"><tr><td class="email-additional-content">' : '';
 	echo wp_kses_post( wpautop( wptexturize( $additional_content ) ) );
 	echo $email_improvements_enabled ? '</td></tr></table>' : '';
 }

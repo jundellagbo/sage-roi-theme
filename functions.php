@@ -143,7 +143,7 @@ function sage_roi_theme_category_single_product(){
 
         $single_cat = array_shift( $product_cats ); ?>
 
-        <h4 itemprop="name" class="product_category_title"><span><?php echo $single_cat->name; ?></span></h4>
+        <h4 itemprop="name" class="product_category_title"><span><?php echo esc_html( $single_cat->name ); ?></span></h4>
 
 <?php }
 }
